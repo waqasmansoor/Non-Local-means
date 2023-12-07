@@ -536,7 +536,7 @@ def preprocess_img(img,grayscale=0,scale=1,brainweb=False):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--data', type=str, default='images', help='Image Data Path')
+    parser.add_argument('--data', type=str, default='us data', help='Image Data Path')
     parser.add_argument('--brainweb', default=False, help='Perform Filtering on MRI brain web dataset')
     parser.add_argument('--brainweb-3d-file',type=int, default=54, help='FILES = [4, 5, 6, 18, 20, 38, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54]')
     parser.add_argument('--brainweb-2d-file',type=int, default=181, help='Select a 2D frame from a 3D MRI file')
