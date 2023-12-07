@@ -591,8 +591,8 @@ if __name__ == "__main__":
         ttime=0
 
         for i,n in enumerate(speckle_noises):
-            if  n == 0.2 or n == 0.4:
-                    continue
+            # if  n == 0.2 or n == 0.4:
+            #         continue
             print("Noise ",n)
             sigma=n
             imgSpeckle=random_noise(img,mode='speckle',mean=0,var=(sigma)**2,clip=False)
