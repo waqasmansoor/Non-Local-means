@@ -474,8 +474,8 @@ def load_file(path,files,no):
         data = np.frombuffer(fi.read(), dtype=np.uint16)
     return data.reshape((362, 434, 362))
 
-def obnlm_voxel(gt,noisy_img,sigma,d,M,u1,var,fig=False):
-    vals=[0.1,0.15,0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95]
+def obnlm_voxel_u1(vals,gt,noisy_img,sigma,d,M,u1,var,fig=False):
+    
     
     _snr=np.zeros(len(vals))
     
@@ -486,19 +486,21 @@ def obnlm_voxel(gt,noisy_img,sigma,d,M,u1,var,fig=False):
         imgs=[gt,noisy_img,denoised]
         _snr[j]=display(imgs,3,(10,10),t,fig)    
 
-    plot_B_snr(vals,_snr)
+    return _snr
 
+def obnlm_voxel_var(vals,gt,noisy_img,sigma,d,M,u1,var,fig=False):
+    _snr=np.zeros(len(vals))
     for j,v in enumerate(vals):
         h2=2*0.5 * (sigma)**2 * (2*d+1)**2
-        print("Mean u1 = ",u)
+        print("Mean u1 = ",v)
         denoised,t=bwNLM(noisy_img,M,d,h2,u1,v,voxel_selection=True,bayesian=True)#(arr,bigWindowRadius,smallWindowRadius,NF) # for slides 4
         imgs=[gt,noisy_img,denoised]
         _snr[j]=display(imgs,3,(10,10),t,fig)    
 
-    plot_B_snr(vals,_snr)
+    return _snr
 
-def obnlm_B(gt,noisy_img,sigma,d,M,u1,var,fig=False):
-    B=[0.01,0.03,0.05,0.07,0.09,0.1,0.3,0.5,0.7,1]
+def obnlm_B(B,gt,noisy_img,sigma,d,M,u1,var,fig=False):
+    
     _snr=np.zeros(len(B))
     
     for j,b in enumerate(B):
@@ -508,7 +510,7 @@ def obnlm_B(gt,noisy_img,sigma,d,M,u1,var,fig=False):
         imgs=[gt,noisy_img,denoised]
         _snr[j]=display(imgs,3,(10,10),t,fig)    
 
-    plot_B_snr(B,_snr)
+    return _snr
 
 def plot_B_snr(B,snr_mat):
     plt.plot(B,snr_mat[0],'r--')
@@ -519,6 +521,7 @@ def plot_B_snr(B,snr_mat):
     plt.title(r'Influence of $\beta $')
     plt.grid(True)
     plt.legend([r'$\sigma = 0.2$',r'$\sigma = 0.4$',r'$\sigma = 0.8$'])
+    plt.show()
 
 def preprocess_img(img,grayscale=0,scale=1,brainweb=False):
     if isinstance(img,Path):
@@ -580,16 +583,21 @@ if __name__ == "__main__":
         files=[data]
 
     for f in files:
-        if type(f) == str:
+        
+        if isinstance(f,Path):
             print("Processing File -----------------> ",f)
         else: print("Processing File -----------------> ",opt.brainweb_3d_file)
-        img=preprocess_img(f,brainweb=opt.brainweb)
-
+        img=preprocess_img(f,brainweb=opt.brainweb,scale=0.5)
+        
         imgSpeckle=np.zeros_like(img.shape,dtype=np.float32)
         # imgGauss=np.ndarray((len(gaussian_noises),*img.shape))
         denoised=np.zeros_like(img.shape,dtype=np.float32)
         ttime=0
-
+        B=[0.01,0.03,0.05,0.07,0.09,0.1,0.3,0.5,0.7,1]
+        vals=[0.1,0.15,0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95]
+        snr_vs_B=np.zeros((len(speckle_noises),len(B)))
+        snr_vs_u1=np.zeros((len(speckle_noises),len(vals)))
+        snr_vs_var=np.zeros((len(speckle_noises),len(vals)))
         for i,n in enumerate(speckle_noises):
             # if  n == 0.2 or n == 0.4:
             #         continue
@@ -608,9 +616,10 @@ if __name__ == "__main__":
             
             """-------------------------"""
             if opt.plot_beta:
-                obnlm_B(img,imgSpeckle,sigma,d,M,u1,var,False)
-            if opt.plot_voxel:
-                obnlm_voxel(img,imgSpeckle,sigma,d,M,0.95,0.5,False)
+                snr_vs_B[i]=obnlm_B(B,img,imgSpeckle,sigma,d,M,u1,var,False)
+            elif opt.plot_voxel:
+                snr_vs_u1[i]=obnlm_voxel_u1(vals,img,imgSpeckle,sigma,d,M,0.95,0.5,False)
+                snr_vs_var[i]=obnlm_voxel_var(vals,img,imgSpeckle,sigma,d,M,0.95,0.5,False)
             else:
                 match opt.filter:
                     case 0:
@@ -631,8 +640,12 @@ if __name__ == "__main__":
                 imgs=[img,imgSpeckle,denoised]
                 display(imgs,3,(10,10),ttime,True)    
 
+        if opt.plot_beta:
+            plot_B_snr(B,snr_vs_B)
+        if opt.plot_voxel:
+            plot_B_snr(vals,snr_vs_u1)
+            plot_B_snr(vals,snr_vs_var)
         
-        # break
     
 
             
